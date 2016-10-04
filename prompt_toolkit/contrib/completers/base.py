@@ -59,3 +59,52 @@ class WordCompleter(Completer):
             if word_matches(a):
                 display_meta = self.meta_dict.get(a, '')
                 yield Completion(a, -len(word_before_cursor), display_meta=display_meta)
+
+
+class TreeCompleter(Completer):
+    def __init__(self, nodes, ignore_case=False, meta_dict=None, WORD=False,
+                 sentence=False, match_middle=False):
+        self._nodes = nodes
+        self._ignore_case = ignore_case
+        self._meta_dict = meta_dict
+        self._WORD = WORD
+
+    def get_completions(self, document, complete_event):
+        word_before_cursor = document.text_before_cursor
+
+        if self._ignore_case:
+            word_before_cursor = word_before_cursor.lower()
+
+        words_before_cursor = word_before_cursor.split()
+        if words_before_cursor:
+            word_before_cursor = words_before_cursor[-1]
+        else:
+            word_before_cursor = ""
+
+        def word_matches(word):
+            if self._ignore_case:
+                word = word.lower()
+            return word.startswith(word_before_cursor)
+
+        root = self._nodes
+        for word in words_before_cursor:
+            try:
+                if not isinstance(root[word], str):
+                    root = root[word]
+                else:
+                    root = None
+                    break
+            except:
+                break
+        else:
+            word_before_cursor = ""
+        if root:
+            for a in root:
+                if word_matches(a):
+                    if isinstance(root[a], str):
+
+                        display_meta = root[a]
+                    else:
+                        display_meta = ", ".join(root[a])
+                    yield Completion(a, -len(word_before_cursor), display_meta=display_meta)
+
